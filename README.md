@@ -1,9 +1,9 @@
-# 📚🧑‍💻 StrongSwan Ipsec site-to-site configuration using Python Scripting
+# 📚🧑‍💻 StrongSwan IPsec site-to-site configuration using Python Scripting
 
-## the objective of the project
+## The objective of the project
 Learn how to  set up StrongSwan configure Ipsec site-to-site , with using python automation scripting for more flexibility and speed of work
 
-## some concepts
+## Some concepts
 
 - **What is VPN :** 
 A virtual private network extends a private network across a public network for online privacy and anonymity by providing secure and encrypted connections
@@ -117,13 +117,13 @@ conn ipsec-ikev2-vpn
 
 ```
 
-**config setup :** Specifies general configuration information for IPSec which applies to all connections.
-**charondebug :** Defines how much Charon debugging output should be logged.
-**leftid :** Specifies the domain name or IP address of the server.
-**leftcert :** Specifies the name of the server certificate.
-**leftsubnet :** Specifies the private subnet behind the left participant.
-**rightsourceip :** IP address pool to be assigned to the clients.
-**rightdns :** DNS to be assigned to clients.
+- **config setup :** Specifies general configuration information for IPSec which applies to all connections.
+- **charondebug :** Defines how much Charon debugging output should be logged.
+- **leftid :** Specifies the domain name or IP address of the server.
+- **leftcert :** Specifies the name of the server certificate.
+- **leftsubnet :** Specifies the private subnet behind the left participant.
+- **rightsourceip :** IP address pool to be assigned to the clients.
+- **rightdns :** DNS to be assigned to clients.
 
 ### Configure Authentication
 VPN server is configured to accept client connections 
@@ -190,5 +190,71 @@ List of X.509 End Entity Certificates
   keyid:     e4:72:d0:97:20:ec:a5:79:f2:e0:bf:aa:0e:41:a8:ec:67:06:de:ee
   subjkey:   bf:1d:b1:1b:51:a0:f7:63:33:e2:5f:4c:cb:73:4f:64:0f:b9:84:09
 ```
+
+## B- Client Side 
+
+### Install and Configure strongSwan Client
+- run the following command :
+```
+   sudo apt-get install strongswan libcharon-extra-plugins -y
+```
+- disable the strongSwan service to start at boot :
+```
+   sudo systemctl disable strongswan
+```
+- copy the ca.cert.pem file from the VPN server to the VPN client : 
+```
+   sudo scp root@your-vpnserver-ip:/etc/ipsec.d/cacerts/ca.cert.pem /etc/ipsec.d/cacerts/
+```
+- configure VPN client authentication :
+```
+   sudo nano /etc/ipsec.secrets
+```
+- Add this line:
+```
+   sudo vpnsecure : EAP "your-secure-password"
+```
+- edit the strongSwan default configuration file `ipsec.conf`
+```
+   sudo nano /etc/ipsec.conf
+```
+- Add the following lines :
+```
+    conn ipsec-ikev2-vpn-client
+    auto=start
+    right=vpn.example.com
+    rightid=vpn.example.com
+    rightsubnet=0.0.0.0/0
+    rightauth=pubkey
+    leftsourceip=%config
+    leftid=vpnsecure
+    leftauth=eap-mschapv2
+    eap_identity=%identity
+```
+- restart the strongSwan service :
+```
+   sudo systemctl restart strongswan
+```
+# Finally : VPN connection status verification
+- On strongSwan server , run the following command :
+```
+   sudo ipsec status
+```
+- You should see this :
+```
+Security Associations (1 up, 0 connecting):
+ipsec-ikev2-vpn-client[1]: ESTABLISHED 1 minutes ago, [vpnsecure]...192.168.0.1[vpn.example.com]
+ipsec-ikev2-vpn-client{1}:  INSTALLED, TUNNEL, reqid 1, ESP in UDP SPIs: 74ab87d0db9ea3d5_i 684cb0dbe4d1a70d_r
+ipsec-ikev2-vpn-client{1}:   192.168.0.5/32 === 0.0.0.0/0
+```
+
+
+# 🚀 To Do :
+## Part 02 of the Project : 
+Automate all the work using python 🐍 programming language
+
+
+
+
 
 
